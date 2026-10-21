@@ -69,7 +69,7 @@ jobs:
           grep -n 'case 4[0-9]' "$f"
 
       - name: "(Prueba) desactivar el hook de __dynamic_cast"
-        if: ${{ inputs.test_no_dyncast == true }}
+        if: ${{ github.event_name == 'push' || inputs.test_no_dyncast == true }}
         shell: bash
         run: |
           f=loader/src/hooks/DynamicCastFix.cpp
