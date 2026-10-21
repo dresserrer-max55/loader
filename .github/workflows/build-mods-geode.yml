@@ -97,8 +97,20 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: cpm-cache
-          key: cpm-loader-${{ matrix.id }}-${{ hashFiles('**/CMakeLists.txt', '**/*.cmake') }}
-          restore-keys: cpm-loader-${{ matrix.id }}-
+          key: cpm2-loader-${{ matrix.id }}-${{ hashFiles('**/CMakeLists.txt', '**/*.cmake') }}
+
+      # La cache de CPM puede traer una copia vieja o incompleta de asp2 (falta asp/fs/Path.hpp) y rompe el build.
+      - name: Validar cache de CPM
+        shell: bash
+        run: |
+          for d in cpm-cache/asp2/*/; do
+            [ -d "$d" ] || continue
+            if [ ! -f "${d}include/asp/fs/Path.hpp" ]; then
+              echo "Cache de asp2 invalida ($d): se borra toda la cache de CPM"
+              rm -rf cpm-cache
+              break
+            fi
+          done
 
       - name: Configurar loader
         shell: bash
@@ -242,8 +254,20 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: cpm-cache
-          key: cpm-mod-${{ matrix.id }}-${{ hashFiles('**/CMakeLists.txt', '**/*.cmake') }}
-          restore-keys: cpm-mod-${{ matrix.id }}-
+          key: cpm2-mod-${{ matrix.id }}-${{ hashFiles('**/CMakeLists.txt', '**/*.cmake') }}
+
+      # La cache de CPM puede traer una copia vieja o incompleta de asp2 (falta asp/fs/Path.hpp) y rompe el build.
+      - name: Validar cache de CPM
+        shell: bash
+        run: |
+          for d in cpm-cache/asp2/*/; do
+            [ -d "$d" ] || continue
+            if [ ! -f "${d}include/asp/fs/Path.hpp" ]; then
+              echo "Cache de asp2 invalida ($d): se borra toda la cache de CPM"
+              rm -rf cpm-cache
+              break
+            fi
+          done
 
       - name: Configurar perfil del CLI
         shell: bash
