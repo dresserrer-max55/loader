@@ -204,6 +204,19 @@ jobs:
               sys.exit("No hay mod.json ni mod.json.template en la raiz del repo del mod")
           PY
 
+      # Globed (geobuild.py) exige "Geode >= v5.10.0" y lo comprueba con git sobre el SDK. Aqui el SDK es la rama v6
+      # (5.11.2), que SI es mas nueva, pero la comprobacion falla igual (historial incompleto / tags ausentes).
+      # Se desactiva solo esa comprobacion; el resto del build no cambia.
+      - name: Desactivar la comprobacion de version de Geode de Globed
+        shell: bash
+        run: |
+          if [ -f geobuild.py ] && grep -q 'if not gc.ignore_geode_mismatch:' geobuild.py; then
+            sed -i 's/if not gc.ignore_geode_mismatch:/if False:  # parcheado: SDK v6 es mas nuevo que el requerido/' geobuild.py
+            grep -n 'parcheado' geobuild.py
+          else
+            echo "geobuild.py sin comprobacion de version (o no es Globed): nada que hacer"
+          fi
+
       # SDK de Geode: la MISMA rama que el loader (v6). El action oficial build-geode-mod no acepta una rama,
       # por eso el mod se compila a mano con los mismos pasos que hace ese action.
       - name: Checkout del SDK de Geode
@@ -212,6 +225,7 @@ jobs:
           repository: geode-sdk/geode
           ref: ${{ inputs.geode_ref || 'v6' }}
           submodules: recursive
+          fetch-depth: 0
           path: geode-sdk-clone
 
       - name: Loader compilado (para enlazar el mod)
