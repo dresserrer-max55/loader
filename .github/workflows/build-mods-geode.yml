@@ -68,8 +68,21 @@ jobs:
           sed -i 's|^\( *\)case 41: m_gdVersion = "2.2081"; break;|&\n\1case 42: m_gdVersion = "2.209"; break;\n\1case 43: m_gdVersion = "2.2091"; break;|' "$f"
           grep -n 'case 4[0-9]' "$f"
 
+      # CAUSA DEL CRASH al cerrar popups (signal 11 en ~CCNode): Geode pone un "NullComponentContainer" falso en
+      # m_pComponentContainer. En GD 2.2091 (Android) el CCComponentContainer real tiene destructor virtual
+      # (vtable: ~D1, ~D0, get, add, remove, remove, removeAll, visit) y ~CCNode llama a removeAll en el slot 6.
+      # La clase falsa de Geode no tenia destructor virtual (removeAll en el slot 4), asi que el slot 6 caia
+      # fuera de su vtable y se ejecutaba un puntero a datos. Con destructor virtual los slots coinciden.
+      - name: Arreglar NullComponentContainer (vtable de GD 2.2091)
+        shell: bash
+        run: |
+          f=loader/src/hooks/GeodeNodeMetadata.cpp
+          grep -q '        ~NullComponentContainer() = default;' "$f" || { echo "No se encontro el destructor de NullComponentContainer"; exit 1; }
+          sed -i 's|^        ~NullComponentContainer() = default;|        virtual ~NullComponentContainer() = default;|' "$f"
+          grep -n 'NullComponentContainer() ' "$f"
+
       - name: "(Prueba) desactivar el hook de __dynamic_cast"
-        if: ${{ github.event_name == 'push' || inputs.test_no_dyncast == true }}
+        if: ${{ inputs.test_no_dyncast == true }}
         shell: bash
         run: |
           f=loader/src/hooks/DynamicCastFix.cpp
